@@ -1,0 +1,165 @@
+---
+title: "Relatório Atividade 1"
+author: "Liz Alexandrita de Souza Barreto"
+date: "20/10/2021"
+output: pdf_document
+---
+---
+Universidade de Franca
+RGM: 21125066
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preparação do Ambiente e Análise dos dados
+Este relatório foi feito com o Rmarkdown!
+
+```{r}
+library(tidyverse)
+```
+
+### Leitura do arquivo e entendimento dos campos
+
+``` {r}
+
+pacientes <- read_csv('pacientes.csv')
+glimpse(pacientes)
+```
+
+### Qualidade dos dados
+```{r}
+
+pacientes %>% summary
+
+```
+
+### Expurgo de NA e limpeza de tipo de dado
+```{r}
+
+pacientes <- drop_na(pacientes)
+pacientes$ID <- as.factor(pacientes$ID)
+pacientes$`Código do Procedimento Principal` <- as.factor(pacientes$`Código do Procedimento Principal`)
+```
+
+## Estatísticas da Idade do Segurado
+Vamos estudar algumas estatísticas descritivas da Idade:
+
+```{r}
+
+pacientes %>% summarize(
+  min = min(`Idade do Segurado`), 
+  max = max(`Idade do Segurado`),
+  mean = mean(`Idade do Segurado`),
+  median = median(`Idade do Segurado`), 
+  var = var(`Idade do Segurado`),
+  sd = var(`Idade do Segurado`) ^ (1/2))
+```
+
+### Gráfico de Densidade da Idade
+
+```{r, echo=FALSE}
+
+pacientes %>% ggplot(aes(`Idade do Segurado`)) + 
+  geom_density(fill = "blue")
+```
+
+## Estatísticas do Valor Total Liberado
+Vamos estudar algumas estatísticas do Valor Liberado:
+
+```{r}
+
+pacientes %>% summarize(
+  min = min(`Valor Total Liberado`), 
+  max = max(`Valor Total Liberado`),
+  mean = mean(`Valor Total Liberado`),
+  median = median(`Valor Total Liberado`), 
+  var = var(`Valor Total Liberado`),
+  sd = var(`Valor Total Liberado`) ^ (1/2))
+```
+  
+### Gráfico de Densidade do Valor
+
+```{r, echo=FALSE}
+pacientes %>% ggplot(aes(`Valor Total Liberado`)) + 
+  geom_density(fill = "blue")
+```
+
+## Estudo de Interações entre Valor e Idade do Segurado
+
+```{r}
+pacientes %>% filter(`Valor Total Liberado` == max(`Valor Total Liberado`))
+pacientes %>% filter(`Idade do Segurado` == max(`Idade do Segurado`))
+```
+
+### Estudo gráfico
+
+```{r, echo=FALSE}
+pacientes %>% ggplot(aes(x=`Idade do Segurado`, y=`Valor Total Liberado`)) +
+    geom_point(shape=1) + 
+    geom_smooth(method=lm)  
+```
+
+## Conclusões
+A variável etária não segue uma distribuição normal e também não segue a pirâmide etária demográfica, porém a maior parte de seus dados cai no intervalo entre os 30 e os 76 anos, segundo a análise gráfica e estatística (53 anos de média +- 23 de desvio padrão)
+Já a variável de valor liberado parece seguir uma distribuição normal porém com uma longa cauda à direita (skewness positiva) e pequeno desvio padrão em relação ao tamanho da sua cauda.
+A variância dos dados tanto de idade, mas principalmente de Valor é muito grande (justamente pela cauda da distribuição), o que significa que esse dataset pertenceria, por exemplo a uma seguradora que não tem um nicho etário pra além de adultos pagantes ou em idade economicamente ativa nem de preços de procedimentos.
+Contra intuitivamente, não há uma correlação positiva entre valor liberado e idade segundo a análise de interação dessas duas variáveis, a tendência é praticamente uniforme puxando para levemente negativa segundo análise gráfica. Apesar disso, o máximo de valor liberado individualmente (foi para paciente de 72 anos) e o total dos valores liberados de pacientes do último quartil (107 anos) serem acima da média.
+Temos como definir o código dos procedimentos mais liberados em termos de valores, e os mais caros para pacientes mais velhos, no entanto não conseguimos identificá-los através do código.
+
+## Código em R na íntegra
+
+``` {r, eval = FALSE}
+
+# Preparação do ambiente
+#@title Atividade 1 PIC
+#install.packages("tidyverse")
+#install.packages("rmarkdown")
+library(tidyverse)
+library(rmarkdown)
+# Ler arquivo e analisar campos
+pacientes <- read_csv('pacientes.csv')
+glimpse(pacientes)
+pacientes$ID <- as.factor(pacientes$ID)
+pacientes$`Código do Procedimento Principal` <- as.factor(pacientes$`Código do Procedimento Principal`)
+# Estatísticas e Gráficos
+pacientes %>% ggplot(aes(`Idade do Segurado`)) + 
+  geom_density(fill = "blue")
+summary(pacientes)
+pacientes %>% summarize(
+  min = min(`Idade do Segurado`), 
+  max = max(`Idade do Segurado`),
+  mean = mean(`Idade do Segurado`),
+  median = median(`Idade do Segurado`), 
+  var = var(`Idade do Segurado`),
+  sd = var(`Idade do Segurado`) ^ (1/2))
+pacientes %>% ggplot(aes(`Valor Total Liberado`)) + 
+  geom_density(fill = "blue")
+range(pacientes$`Valor Total Liberado`)
+pacientes <- drop_na(pacientes)
+pacientes %>% summarize(
+  min = min(`Valor Total Liberado`), 
+  max = max(`Valor Total Liberado`),
+  mean = mean(`Valor Total Liberado`),
+  median = median(`Valor Total Liberado`), 
+  var = var(`Valor Total Liberado`),
+  sd = var(`Valor Total Liberado`) ^ (1/2))
+pacientes %>% filter(`Valor Total Liberado` == max(`Valor Total Liberado`))
+pacientes %>% filter(`Idade do Segurado` == max(`Idade do Segurado`))
+pacientes %>% ggplot(aes(`Valor Total Liberado`)) + 
+  geom_density(fill = "blue")
+pacientes %>% ggplot(aes(`Valor Total Liberado`)) + 
+  geom_histogram(fill = "blue")
+valor_proced <- pacientes %>% group_by(`Código do Procedimento Principal`) %>% summarise(valor_total = sum(`Valor Total Liberado`))
+glimpse(valor_proced)
+valor_proced %>% summarize(
+  min = min(valor_total), 
+  max = max(valor_total),
+  mean = mean(valor_total),
+  median = median(valor_total), 
+  var = var(valor_total),
+  sd = var(valor_total) ^ (1/2))
+valor_proced %>% filter(valor_total == max(valor_total))
+
+```

@@ -1,0 +1,167 @@
+---
+title: "Relatório Projeto e Aplicação de Mineração de Dados"
+author: "Liz Alexandrita de Souza Barreto"
+date: "02/12/2021"
+output: pdf_document
+---
+---
+Universidade de Franca
+RGM: 21125066
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Preparação do Ambiente e Análise dos dados
+Este relatório foi feito com o Rmarkdown!
+
+```{r}
+library(tidyverse)
+library(farff)
+library(rpart)
+library(rpart.plot)
+```
+
+### Leitura do arquivo e entendimento dos campos
+
+``` {r}
+
+iris_data <- readARFF('iris.arff')
+#afour <- read_csv('A4.csv')
+#stumat <- read_csv('student-mat.csv')
+#ans <- read_tsv('4300Answers.tsv')
+#twt <- read_tsv('TweetsNeutralNews.tsv')
+
+glimpse(iris_data)
+#glimpse(afour)
+#glimpse(ans)
+#glimpse(stumat)
+#glimpse(twt)
+```
+
+
+## Introdução
+Vou realizar dois métodos, árvore de decisão e regressão linear para tentar discriminar entre classes do dataset iris. O tratamento básico será tentar retirar os registros faltantes e escolha de atributos para a regressão linear.
+
+
+### Escolha e Qualificação dos dados do dataset escolhido
+```{r}
+
+iris_data %>% summary
+
+```
+### Matriz de covariância
+A diagonal principal marca a variância dos atributos e os demais elementos é a covariância.
+
+```{r}
+
+var(iris_data)
+
+```
+
+### Verificação e tratamentos do dataset
+``` {r}
+
+nas <- colSums(is.na.data.frame(iris_data))
+nas
+
+```
+
+### Gráfico de Densidade dos Atributos
+
+```{r}
+
+iris_data %>% ggplot(aes(`sepallength`)) + 
+  geom_density(fill = "blue")
+```
+
+```{r}
+
+iris_data %>% ggplot(aes(`sepalwidth`)) + 
+  geom_density(fill = "blue")
+```
+```{r, echo=FALSE}
+
+iris_data %>% ggplot(aes(`petallength`)) + 
+  geom_density(fill = "blue") # esse gráfico é interessante - agrupamento
+```
+```{r}
+
+iris_data %>% ggplot(aes(`petalwidth`)) + 
+  geom_density(fill = "blue") # esse tbm - agrupamento
+```
+
+### Estudo gráfico
+Quero analisar quais 2 atributos são interessantes para se criar uma árvore de decisão e uma regressão linear.
+
+```{r}
+
+iris_data %>% plot(pch = 21, bg=c("blue", "red", "green3")[unclass(iris_data$class)]) 
+```
+Decidi usar sepalwidth e petalwidth para a regresão linear.
+
+### Árvore de decisão
+O modelo usa a classe e todos os atributos.
+``` {r}
+
+# modelinho <- tree(class ~ sepallength + sepalwidth + petallength + petalwidth, iris_data)
+#modelinho <- rpart(class ~ petallength + petalwidth, iris_data, method = "class", x = TRUE)
+modelinho <- rpart(class ~., iris_data, method = "class")
+
+modelinho
+```
+A cada passo ele aumenta o peso para decidir se altera a classe do registro. Note que ele escolheu sozinho 2 atributos que melhor caracterizam a decisão de classificar esse dataset.
+
+
+``` {r}
+
+rpart.plot(modelinho, type = 4)
+
+```
+
+### Regressão Linear com os atributos escolhidos
+
+``` {r}
+
+modelinho2 <- lm(sepalwidth ~ petalwidth, iris_data)
+modelinho2
+
+```
+``` {r}
+
+modelinho2 %>% plot()
+```
+
+``` {r}
+
+modelinho3 <- lm(petallength ~ petalwidth, iris_data)
+modelinho3
+
+```
+``` {r}
+
+modelinho3 %>% plot()
+```
+
+```{r}
+
+iris_data %>% ggplot(aes(x=`petalwidth`, y=`petallength`)) +
+    geom_point(shape=1) + 
+    geom_smooth(method=lm)  
+```
+```{r}
+
+iris_data %>% ggplot(aes(x=`petalwidth`, y=`sepalwidth`)) +
+    geom_point(shape=1) + 
+    geom_smooth(method=lm)  
+```
+
+A regressão nesse gráfico de dispersão mostra que é preciso de usar mais do que esses dois atributos para diferenciar nas classes rotuladas.
+
+
+
+## Conclusões
+
+A classe setosa é facilmente identificável dentre as 3 classes. Observamos também pela regressão que há uma correlação negativa entre as variáveis escolhidas (largura de sepal e pétala) no contexto dos 3 grupos, no entanto é positiva em cada subgrupo. Já na regressão dos atributos escolhidos pelo algoritmo da árvore de decisão (as medidas da pétala) conseguimos realizar o recorte pelos valores em x e por isso a forte covariância entre essas medidas facilita a discriminação das classes mesmo olhando apenas para a reta de regressão.
